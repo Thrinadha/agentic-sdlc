@@ -1,0 +1,14 @@
+{
+  "title": "Safe division helper",
+  "kind": "greenfield",
+  "intent": "Callers get a clear error instead of a crash or infinity when dividing by zero.",
+  "problem_statement": "Provide calc.ops.divide(a, b) returning a / b, raising ValueError('cannot divide by zero') when b == 0.",
+  "acceptance_criteria": [
+    {"id": "AC1", "text": "divide(6, 3) == 2"},
+    {"id": "AC2", "text": "divide(x, 0) raises ValueError mentioning 'zero'"}
+  ],
+  "non_functional": [],
+  "out_of_scope": ["Other operations"],
+  "ambiguities": [],
+  "assumptions": []
+}

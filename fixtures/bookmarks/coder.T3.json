@@ -1,0 +1,8 @@
+{
+  "files": [
+    {"path": "bookmarks/store.py", "content_file": "files/final/bookmarks/store.py"},
+    {"path": "bookmarks/api.py", "content_file": "files/final/bookmarks/api.py"}
+  ],
+  "notes": "Filter runs before slicing so total and paging apply to matches. casefold() for case-insensitive matching.",
+  "decisions": ["tag is optional with min_length=1 so `?tag=` is a 422 rather than silently ignored"]
+}

@@ -1,0 +1,44 @@
+{
+  "title": "URL shortener service",
+  "kind": "greenfield",
+  "intent": "Let users turn long URLs into short links that redirect reliably and show how often and from where they are used.",
+  "problem_statement": "Build an HTTP service that creates short codes for long URLs, redirects short codes to their targets with low latency, persists links durably, and records click analytics (counts over time and referrers). The design must scale horizontally for a read-heavy workload, and the code must be structured so the cache and analytics pipeline can be swapped for distributed versions without changing the API.",
+  "acceptance_criteria": [
+    {"id": "AC1", "text": "POST /api/v1/links creates a short link for an http(s) URL and returns 201 with code and short_url; invalid URLs return 422."},
+    {"id": "AC2", "text": "Optional custom alias: used as the code if valid and free; 409 if already taken; reserved words rejected with 422."},
+    {"id": "AC3", "text": "Optional expiry: GET /{code} returns 410 after expires_at; expiry in the past is rejected at creation."},
+    {"id": "AC4", "text": "GET /{code} returns 307 to the target URL; unknown or deleted codes return 404."},
+    {"id": "AC5", "text": "Every redirect is recorded (timestamp, referrer, user agent) without adding latency to the redirect."},
+    {"id": "AC6", "text": "GET /api/v1/links/{code}/stats returns total clicks, last click, daily counts and top referrers."},
+    {"id": "AC7", "text": "GET and DELETE /api/v1/links/{code} return metadata and deactivate a link."},
+    {"id": "AC8", "text": "Links and clicks persist in a relational database (PostgreSQL in production, SQLite locally)."},
+    {"id": "AC9", "text": "The API is described by an OpenAPI contract that the implementation matches exactly."}
+  ],
+  "non_functional": [
+    "Read-heavy: design for ~10k redirects/s at ~100:1 read/write; app tier stateless and horizontally scalable.",
+    "Redirect p95 under 50 ms at the service (cache hit) excluding network.",
+    "Codes must not be guessable/enumerable.",
+    "Analytics failures must never break redirects.",
+    "Configuration through environment variables; no secrets in code."
+  ],
+  "out_of_scope": [
+    "User accounts, authentication and per-user link ownership",
+    "Rate limiting (expected at the API gateway)",
+    "Malicious URL screening, custom domains, link editing"
+  ],
+  "ambiguities": [
+    {"id": "Q1", "question": "Should the same long URL always return the same short code?", "severity": "minor",
+     "why_it_matters": "Deduplication changes the data model and leaks that two users shortened the same URL.",
+     "assumption": "No: every create returns a new code."},
+    {"id": "Q2", "question": "301 (permanent) or 302/307 (temporary) redirects?", "severity": "minor",
+     "why_it_matters": "Permanent redirects are cached by browsers, so later clicks are never counted and deleted links keep working.",
+     "assumption": "307 with Cache-Control: no-store, so analytics stay accurate."},
+    {"id": "Q3", "question": "How much analytics detail and how long is it kept?", "severity": "minor",
+     "why_it_matters": "Raw click events grow fastest of all data.",
+     "assumption": "Raw events with daily aggregation over the last 30 days; monthly partitions and retention at scale."},
+    {"id": "Q4", "question": "Who may delete links without authentication?", "severity": "minor",
+     "why_it_matters": "Without auth anyone who knows a code can delete it.",
+     "assumption": "Auth is out of scope for v1; the API is internal behind the gateway."}
+  ],
+  "assumptions": []
+}

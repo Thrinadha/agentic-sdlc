@@ -1,0 +1,45 @@
+{
+  "rationale": "Contract first: the architect fixes the API and data model (T1) so code, tests and docs can proceed in parallel against the same source of truth. Core infrastructure (config, persistence, codes, cache) is separated from the service/API layer so the integration tests (T5) can be written from the contract while the API is being implemented (T3), and the docs (T6) only need the contract. Unit tests for the service (T4) need its interface, so they follow T3. A single validator (T7) runs every check and routes failures back to the owning task.",
+  "tasks": [
+    {"id": "T1", "title": "API contract, data model and ADRs", "agent": "architect", "depends_on": [],
+     "description": "OpenAPI 3.1 contract for all endpoints, PostgreSQL schema, ADRs for code generation and for redirects/caching/analytics. Module layout: app.{config,db,models,shortcode,cache,schemas,repository,service,analytics,api,main}; factory app.main:create_app.",
+     "acceptance": "Contract covers AC1-AC7 with error codes; schema has unique code index and click events indexed by (link_id, occurred_at).",
+     "outputs": ["api/openapi.yaml", "db/schema.sql", "docs/adr/0001-short-code-generation.md", "docs/adr/0002-redirects-caching-and-analytics.md"]},
+    {"id": "T2", "title": "Core: config, persistence, short codes, cache", "agent": "coder", "depends_on": ["T1"],
+     "description": "Settings from env, SQLAlchemy engine/session, Link and ClickEvent models, base62 code generator and alias rules, LRU+TTL cache behind a Cache protocol, project metadata.",
+     "acceptance": "Modules import cleanly; models match db/schema.sql.",
+     "outputs": ["pyproject.toml", "app/__init__.py", "app/config.py", "app/db.py", "app/models.py", "app/shortcode.py", "app/cache.py"]},
+    {"id": "T6", "title": "README and scalability/operations guide", "agent": "doc_writer", "depends_on": ["T1"],
+     "description": "How to run, configure and use the service (examples match the contract); scaling path, failure modes, monitoring.",
+     "acceptance": "Every endpoint in the contract is documented with an example.",
+     "outputs": ["README.md", "docs/scalability.md"]},
+    {"id": "T3", "title": "Service, analytics and HTTP API", "agent": "coder", "depends_on": ["T1", "T2"],
+     "description": "Request/response schemas, repository, LinkService (create with collision retry, resolve via cache, expiry, delete), AnalyticsService (record clicks in background, stats), routes with error mapping, app factory.",
+     "acceptance": "App serves exactly the contract's operations; AC1-AC8 behaviour.",
+     "outputs": ["app/schemas.py", "app/repository.py", "app/service.py", "app/analytics.py", "app/api.py", "app/main.py"]},
+    {"id": "T5", "title": "Integration tests from the contract", "agent": "tester", "depends_on": ["T1", "T2"],
+     "description": "HTTP-level tests for every acceptance criterion against a temporary database, written from the contract (in parallel with T3).",
+     "acceptance": "Each of AC1-AC7 has at least one test; error paths covered.",
+     "outputs": ["tests/conftest.py", "tests/helpers.py", "tests/integration/test_links_api.py", "tests/integration/test_redirect_analytics.py"]},
+    {"id": "T4", "title": "Unit tests for codes, cache and service rules", "agent": "tester", "depends_on": ["T2", "T3"],
+     "description": "Code generation and alias rules, cache TTL/LRU with a fake clock, service collision retry, alias conflict, expiry, cache invalidation.",
+     "acceptance": "Pure logic covered without HTTP; deterministic (fake clock, injected code factory).",
+     "outputs": ["tests/unit/test_shortcode.py", "tests/unit/test_cache.py", "tests/unit/test_service.py"]},
+    {"id": "T7", "title": "Validate: tests, lint, unsafe code, contract, secrets", "agent": "validator", "depends_on": ["T3", "T4", "T5", "T6"],
+     "description": "Run the full validation suite; route failures to the owning task.", "acceptance": "All checks pass.", "outputs": []}
+  ],
+  "change_size": "minor",
+  "change_size_reason": "New service; nothing existing can break.",
+  "risks": [
+    "Analytics query differences between SQLite (tests) and PostgreSQL (production) can hide bugs; the same ORM queries are used, and a PostgreSQL CI job is the follow-up.",
+    "In-process cache on several instances serves a deleted link for up to CACHE_TTL_SECONDS on other instances until Redis is introduced.",
+    "Clicks recorded in background tasks can be lost if an instance crashes mid-request; acceptable for v1, removed by the queue.",
+    "No authentication: anyone with network access to the API can delete links (internal API behind the gateway)."
+  ],
+  "tradeoffs": [
+    "Random codes over counter+base62: unguessable and coordination-free, at the cost of rare collision retries.",
+    "307 + no-store over 301: every click reaches us (accurate analytics, deletes take effect) at the cost of more traffic.",
+    "Denormalized click_count for O(1) totals plus raw events for detail, instead of aggregating on every read.",
+    "Background-task analytics now, queue + rollups later: simple to operate today, clear upgrade path."
+  ]
+}

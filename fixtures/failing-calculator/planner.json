@@ -1,0 +1,17 @@
+{
+  "rationale": "One module and its tests, written in parallel from the spec, then validated.",
+  "tasks": [
+    {"id": "T1", "title": "Implement calc.ops.divide", "agent": "coder", "depends_on": [],
+     "description": "divide(a, b) with a ValueError on zero.", "acceptance": "AC1, AC2",
+     "outputs": ["calc/__init__.py", "calc/ops.py"]},
+    {"id": "T2", "title": "Unit tests for divide", "agent": "tester", "depends_on": [],
+     "description": "Normal division and division by zero.", "acceptance": "AC1, AC2",
+     "outputs": ["tests/test_ops.py"]},
+    {"id": "T3", "title": "Validate", "agent": "validator", "depends_on": ["T1", "T2"],
+     "description": "", "acceptance": "All checks pass.", "outputs": []}
+  ],
+  "change_size": "patch",
+  "change_size_reason": "Small helper.",
+  "risks": ["None significant"],
+  "tradeoffs": []
+}

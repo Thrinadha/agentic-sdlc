@@ -1,0 +1,3 @@
+{"ts": 1792949001.873, "severity": "error", "title": "Escalation rejected", "message": "escalation -> rejected by policy:reject", "run_id": "20261025-225249-ad5e2d", "requirement": "REQ-404", "hint": "sdlc debug -w <workspace> --run 20261025-225249-ad5e2d"}
+{"ts": 1792949001.873, "severity": "error", "title": "Task failed", "message": "T3 failed: validation failed; escalation rejected", "run_id": "20261025-225249-ad5e2d", "requirement": "REQ-404", "hint": "sdlc debug -w <workspace> --run 20261025-225249-ad5e2d"}
+{"ts": 1792949001.883, "severity": "critical", "title": "Run failed", "message": "execution failed (tasks not completed: T3)", "run_id": "20261025-225249-ad5e2d", "requirement": "REQ-404", "hint": "sdlc debug -w <workspace> --run 20261025-225249-ad5e2d"}

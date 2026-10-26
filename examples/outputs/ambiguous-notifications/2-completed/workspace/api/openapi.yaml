@@ -1,0 +1,115 @@
+openapi: 3.1.0
+info:
+  title: Notification Service
+  version: 1.0.0
+  description: Order events in, per-user in-app notifications out, filtered by user preferences.
+paths:
+  /api/v1/events:
+    post:
+      tags: [events]
+      summary: Ingest an order event (idempotent by event_id)
+      operationId: ingest_event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OrderEvent" }
+      responses:
+        "202": { description: "Accepted; duplicate=true when this event_id was already processed", content: { application/json: { schema: { $ref: "#/components/schemas/IngestResult" } } } }
+        "422": { description: Invalid event }
+        "503": { description: "Delivery failed on every channel; the producer should retry" }
+  /api/v1/users/{user_id}/notifications:
+    parameters: [{ $ref: "#/components/parameters/UserId" }]
+    get:
+      tags: [inbox]
+      summary: The user's notifications, newest first
+      operationId: list_notifications
+      parameters:
+        - { name: unread, in: query, required: false, schema: { type: boolean, default: false } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Notification" } } } } }
+  /api/v1/users/{user_id}/notifications/{notification_id}/read:
+    parameters:
+      - { $ref: "#/components/parameters/UserId" }
+      - { name: notification_id, in: path, required: true, schema: { type: integer } }
+    post:
+      tags: [inbox]
+      summary: Mark one of the user's notifications as read
+      operationId: mark_read
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Notification" } } } }
+        "404": { description: Not found for this user }
+  /api/v1/users/{user_id}/preferences:
+    parameters: [{ $ref: "#/components/parameters/UserId" }]
+    get:
+      tags: [preferences]
+      summary: Per-channel, per-event-type opt-ins (all on by default)
+      operationId: get_preferences
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Preferences" } } } }
+    put:
+      tags: [preferences]
+      summary: Change opt-ins; keys not sent keep their value
+      operationId: update_preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Preferences" }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Preferences" } } } }
+        "422": { description: Unknown event type }
+  /healthz:
+    get:
+      tags: [ops]
+      operationId: healthz
+      responses:
+        "200": { description: OK }
+components:
+  parameters:
+    UserId:
+      name: user_id
+      in: path
+      required: true
+      schema: { type: string, pattern: "^[A-Za-z0-9_.:-]+$", maxLength: 64 }
+  schemas:
+    EventType:
+      type: string
+      enum: [order_shipped, order_delivered, order_cancelled]
+    OrderEvent:
+      type: object
+      additionalProperties: false
+      required: [event_id, type, user_id, order_id, occurred_at]
+      properties:
+        event_id: { type: string, maxLength: 64 }
+        type: { $ref: "#/components/schemas/EventType" }
+        user_id: { type: string, maxLength: 64 }
+        order_id: { type: string, maxLength: 64 }
+        occurred_at: { type: string, format: date-time }
+    Notification:
+      type: object
+      required: [id, user_id, event_id, event_type, title, body, created_at, read]
+      properties:
+        id: { type: integer }
+        user_id: { type: string }
+        event_id: { type: string }
+        event_type: { $ref: "#/components/schemas/EventType" }
+        title: { type: string }
+        body: { type: string }
+        created_at: { type: string, format: date-time }
+        read: { type: boolean }
+    Preferences:
+      type: object
+      properties:
+        in_app:
+          type: object
+          propertyNames: { $ref: "#/components/schemas/EventType" }
+          additionalProperties: { type: boolean }
+    IngestResult:
+      type: object
+      required: [event_id, duplicate, delivered]
+      properties:
+        event_id: { type: string }
+        duplicate: { type: boolean }
+        delivered: { type: array, items: { type: string } }
+        failed: { type: array, items: { type: string } }

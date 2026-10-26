@@ -1,0 +1,5 @@
+{
+  "files": [{"path": "tests/test_pagination.py", "content_file": "files/final/tests/test_pagination.py"}],
+  "notes": "test_pages_add_up_to_total and test_full_page_has_exactly_size_items fail on the old code (19 items per page).",
+  "decisions": []
+}

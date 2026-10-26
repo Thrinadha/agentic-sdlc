@@ -1,0 +1,5 @@
+{
+  "files": [{"path": "bookmarks/store.py", "content_file": "files/step1/bookmarks/store.py"}],
+  "notes": "Root cause: `end = start + size - 1` (off by one). The slice is now ordered[start:start + size].",
+  "decisions": []
+}

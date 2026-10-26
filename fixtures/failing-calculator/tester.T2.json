@@ -1,0 +1,7 @@
+{
+  "files": [
+    {"path": "tests/test_ops.py", "content": "import pytest\n\nfrom calc.ops import divide\n\n\ndef test_divide():\n    assert divide(6, 3) == 2\n\n\ndef test_divide_by_zero_raises_value_error():\n    with pytest.raises(ValueError, match=\"zero\"):\n        divide(1, 0)\n"}
+  ],
+  "notes": "",
+  "decisions": []
+}

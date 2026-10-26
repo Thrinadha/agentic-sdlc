@@ -1,0 +1,11 @@
+# Agents may analyse, plan and build, but nothing is committed, raised or released without a human.
+# Use with --policy auto to produce a reviewable plan + validated working tree only.
+gates:
+  clarify: answers_or_stop
+  plan: approve
+  commit: reject
+  pr: reject
+  review_fixes: reject
+  escalation: reject
+  merge: reject
+  release: reject

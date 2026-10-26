@@ -1,0 +1,8 @@
+{
+  "files": [
+    {"path": "api/openapi.yaml", "content_file": "files/api/openapi.yaml"},
+    {"path": "docs/adr/0001-channels-and-delivery.md", "content_file": "files/docs/adr/0001-channels-and-delivery.md"}
+  ],
+  "notes": "Factory notify.main:create_app. Modules: models, store, channels, dispatcher, api, main.",
+  "decisions": ["Channel protocol for future email", "Idempotent ingest by event_id with release on total failure", "Synchronous fan-out for in-app"]
+}

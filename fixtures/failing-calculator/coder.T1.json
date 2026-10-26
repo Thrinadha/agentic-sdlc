@@ -1,0 +1,8 @@
+{
+  "files": [
+    {"path": "calc/__init__.py", "content": "\"\"\"Calculator helpers.\"\"\"\n"},
+    {"path": "calc/ops.py", "content": "\"\"\"Arithmetic operations.\"\"\"\n\n\ndef divide(a: float, b: float) -> float:\n    \"\"\"Return a / b.\"\"\"\n    return a / b\n"}
+  ],
+  "notes": "Pre-written answer that keeps the bug on every attempt (demonstrates exhausted recovery).",
+  "decisions": []
+}

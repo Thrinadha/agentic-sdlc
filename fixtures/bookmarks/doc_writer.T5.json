@@ -1,0 +1,5 @@
+{
+  "files": [{"path": "docs/api.md", "content_file": "files/final/docs/api.md"}],
+  "notes": "Changelog entry explains the visible behaviour change from the fix.",
+  "decisions": []
+}

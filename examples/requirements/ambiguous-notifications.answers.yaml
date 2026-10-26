@@ -1,0 +1,5 @@
+# Answers from the product owner to the blocking questions raised for REQ-303.
+# Used with: sdlc implement ... --policy auto --answers <this file>   (or typed in interactively)
+Q1: "Order lifecycle events from the order system: order_shipped, order_delivered, order_cancelled."
+Q2: "In-app inbox only for v1. Email comes next quarter, so adding a channel must not change the API."
+Q3: "A notification must be visible in the user's inbox within 2 seconds of the event (p95)."

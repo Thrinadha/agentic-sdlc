@@ -1,0 +1,33 @@
+{
+  "verdict": "approve_with_comments",
+  "summary": "Clean layering (api -> service -> repository), contract-first, and every acceptance criterion has tests. One missed scenario is fixed below (cached redirect after delete); two follow-ups are recorded for the next iteration.",
+  "coverage": [
+    {"criterion_id": "AC1", "status": "done", "evidence": "service.create + schemas.LinkCreate; test_create_link_returns_201_with_short_url, test_invalid_urls_are_rejected"},
+    {"criterion_id": "AC2", "status": "done", "evidence": "shortcode.is_valid_alias; test_duplicate_alias_returns_409, test_reserved_alias_returns_422"},
+    {"criterion_id": "AC3", "status": "done", "evidence": "service.resolve expiry check; test_expired_link_returns_410, test_expiry_in_the_past_is_rejected"},
+    {"criterion_id": "AC4", "status": "done", "evidence": "api.redirect 307 + no-store; test_redirect_is_307_to_target"},
+    {"criterion_id": "AC5", "status": "done", "evidence": "AnalyticsService.record_click as background task; test_clicks_are_counted"},
+    {"criterion_id": "AC6", "status": "done", "evidence": "AnalyticsService.stats; test_stats_daily_and_referrers"},
+    {"criterion_id": "AC7", "status": "done", "evidence": "get_link/delete_link; test_delete_link_then_404"},
+    {"criterion_id": "AC8", "status": "done", "evidence": "SQLAlchemy models + db/schema.sql; DATABASE_URL"},
+    {"criterion_id": "AC9", "status": "done", "evidence": "contract check passed: 6 operations match api/openapi.yaml"}
+  ],
+  "findings": [
+    {"severity": "medium", "check": "missed scenario", "file": "app/service.py", "line": 84,
+     "message": "Delete invalidates the cache, but no HTTP-level test proves a link that was already redirected (so cached) stops redirecting after delete.",
+     "suggestion": "Add an integration test: redirect, delete, redirect -> 404 (added in fixes)."},
+    {"severity": "low", "check": "missed scenario", "file": "app/api.py", "line": 57,
+     "message": "POST /api/v1/links has no rate limit; scripted abuse can fill the table.",
+     "suggestion": "Follow-up: enforce at the API gateway (documented as out of scope) or add a token bucket per client IP."},
+    {"severity": "low", "check": "patterns", "file": "app/analytics.py", "line": 37,
+     "message": "Stats aggregate raw click_events on every request; fine at v1 volume but O(clicks) per call.",
+     "suggestion": "Follow-up: daily rollup table fed by the analytics queue (docs/scalability.md step 4)."}
+  ],
+  "missed_scenarios": [
+    "Concurrent creates with the same custom alias: covered by the unique constraint (one 201, one 409); no concurrency test yet.",
+    "Very high click volume on one link: covered by the atomic counter; not load tested here."
+  ],
+  "fixes": [
+    {"path": "tests/integration/test_cache_invalidation.py", "content_file": "files/review/tests/integration/test_cache_invalidation.py"}
+  ]
+}

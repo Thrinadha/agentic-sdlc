@@ -1,0 +1,35 @@
+{
+  "rationale": "The clarified answers fix the scope (three order events, in-app only, 2 s target), so a synchronous design with a channel abstraction is enough. Contract first (T1). Domain + dispatcher (T2), integration tests from the contract (T5) and docs (T6) then run in parallel; the HTTP layer (T3) and dispatcher unit tests (T4) follow T2.",
+  "tasks": [
+    {"id": "T1", "title": "API contract and channel/delivery ADR", "agent": "architect", "depends_on": [],
+     "description": "OpenAPI for events, inbox and preferences; ADR on channels and delivery semantics. Layout notify.{models,store,channels,dispatcher,api,main}; factory notify.main:create_app.",
+     "acceptance": "Contract covers AC1-AC6.", "outputs": ["api/openapi.yaml", "docs/adr/0001-channels-and-delivery.md"]},
+    {"id": "T2", "title": "Domain, store, channels and dispatcher", "agent": "coder", "depends_on": ["T1"],
+     "description": "Models, thread-safe store with idempotency claims, Channel protocol + InAppChannel, Dispatcher with failure isolation.",
+     "acceptance": "AC2, AC5, AC6 in the domain.", "outputs": ["pyproject.toml", "notify/__init__.py", "notify/models.py", "notify/store.py", "notify/channels.py", "notify/dispatcher.py"]},
+    {"id": "T5", "title": "Integration tests from the contract", "agent": "tester", "depends_on": ["T1"],
+     "description": "HTTP tests for AC1-AC5 and validation errors.", "acceptance": "Every endpoint and error code exercised.",
+     "outputs": ["tests/test_api.py"]},
+    {"id": "T6", "title": "README", "agent": "doc_writer", "depends_on": ["T1"],
+     "description": "Run, use, limits.", "acceptance": "Examples match the contract.", "outputs": ["README.md"]},
+    {"id": "T3", "title": "HTTP API and app factory", "agent": "coder", "depends_on": ["T1", "T2"],
+     "description": "Routes from the contract; 503 when every channel fails.", "acceptance": "Contract check passes.",
+     "outputs": ["notify/api.py", "notify/main.py"]},
+    {"id": "T4", "title": "Dispatcher unit tests", "agent": "tester", "depends_on": ["T2"],
+     "description": "Idempotency, preferences, failing channel isolation, release on total failure.",
+     "acceptance": "AC2, AC5, AC6 proven without HTTP.", "outputs": ["tests/test_dispatcher.py"]},
+    {"id": "T7", "title": "Validate", "agent": "validator", "depends_on": ["T3", "T4", "T5", "T6"],
+     "description": "", "acceptance": "All checks pass.", "outputs": []}
+  ],
+  "change_size": "minor",
+  "change_size_reason": "New service; no existing consumers.",
+  "risks": [
+    "In-memory state is lost on restart and limits the service to one instance; acceptable for v1, replaced by a database-backed store.",
+    "Synchronous fan-out is fine for in-app delivery; adding email without a queue would put provider latency on the ingest path.",
+    "The 2 s p95 target is met by design but not load tested in this run."
+  ],
+  "tradeoffs": [
+    "Synchronous delivery now vs queue + workers: simpler and well within 2 s for in-app; the queue arrives with email.",
+    "At-least-once with idempotent claims vs exactly-once: much simpler, duplicates are prevented per event_id."
+  ]
+}

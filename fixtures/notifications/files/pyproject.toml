@@ -1,0 +1,9 @@
+[project]
+name = "notification-service"
+version = "1.0.0"
+requires-python = ">=3.10"
+dependencies = ["fastapi>=0.110", "uvicorn>=0.29"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

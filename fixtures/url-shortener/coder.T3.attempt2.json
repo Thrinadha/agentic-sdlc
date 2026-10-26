@@ -1,0 +1,7 @@
+{
+  "files": [
+    {"path": "app/analytics.py", "content_file": "files/app/analytics.py"}
+  ],
+  "notes": "Root cause: func.date() returns a DATE in PostgreSQL but a 'YYYY-MM-DD' string in SQLite, so .isoformat() failed on SQLite. Parse with date.fromisoformat(str(value)), which accepts both. No test was changed.",
+  "decisions": []
+}

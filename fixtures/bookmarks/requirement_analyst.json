@@ -1,0 +1,24 @@
+{
+  "title": "Fix bookmark paging and add tag filter",
+  "kind": "brownfield",
+  "intent": "Users can page through all of their bookmarks and narrow the list to one tag.",
+  "problem_statement": "GET /bookmarks drops items when paging: the reported symptom (45 bookmarks do not add up across pages) points to an off-by-one in the page window. Fix it so pages are contiguous and complete, and add an optional, case-insensitive tag filter applied before paging, without changing the response for existing clients that do not send a tag.",
+  "acceptance_criteria": [
+    {"id": "AC1", "text": "Paging through GET /bookmarks returns every bookmark exactly once; a full page has exactly `size` items."},
+    {"id": "AC2", "text": "GET /bookmarks?tag=<t> returns only bookmarks having tag t, matched case-insensitively and exactly (not substring)."},
+    {"id": "AC3", "text": "With a tag filter, `total` counts matching bookmarks and paging applies to the filtered list."},
+    {"id": "AC4", "text": "Requests without `tag` behave exactly as before (backward compatible); invalid paging values still return 422."},
+    {"id": "AC5", "text": "Regression tests cover the paging bug; docs/api.md documents the tag filter."}
+  ],
+  "non_functional": ["No breaking change to the response shape", "Filtering cost is linear in stored bookmarks (in-memory store)"],
+  "out_of_scope": ["Multiple tags per query", "Persistent storage", "Tag normalisation on write"],
+  "ambiguities": [
+    {"id": "Q1", "question": "Should `?tag=py` match `python` (substring) or only `py`?", "severity": "minor",
+     "why_it_matters": "Substring matching returns surprising results and cannot use an index later.",
+     "assumption": "Exact match, case-insensitive."},
+    {"id": "Q2", "question": "Should multiple tags (`?tag=a&tag=b`) be supported?", "severity": "minor",
+     "why_it_matters": "AND vs OR semantics would need a decision.",
+     "assumption": "Single tag only for now; out of scope."}
+  ],
+  "assumptions": []
+}

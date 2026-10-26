@@ -1,0 +1,15 @@
+{
+  "files": [
+    {"path": "api/openapi.yaml", "content_file": "files/api/openapi.yaml"},
+    {"path": "db/schema.sql", "content_file": "files/db/schema.sql"},
+    {"path": "docs/adr/0001-short-code-generation.md", "content_file": "files/docs/adr/0001-short-code-generation.md"},
+    {"path": "docs/adr/0002-redirects-caching-and-analytics.md", "content_file": "files/docs/adr/0002-redirects-caching-and-analytics.md"}
+  ],
+  "notes": "Layering api -> service -> repository; app factory app.main:create_app; the catch-all GET /{code} route is registered after the API routes.",
+  "decisions": [
+    "Random 7-char base62 codes with unique-constraint retry (ADR 0001)",
+    "307 + Cache-Control: no-store redirects (ADR 0002)",
+    "Read-through cache behind a Cache protocol; Redis later (ADR 0002)",
+    "Clicks recorded after the response; denormalized click_count updated atomically (ADR 0002)"
+  ]
+}

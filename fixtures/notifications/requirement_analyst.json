@@ -1,0 +1,31 @@
+{
+  "title": "User notifications",
+  "kind": "greenfield",
+  "intent": "Users hear about events that matter to them quickly and can control what they receive.",
+  "problem_statement": "The requirement does not say which events trigger notifications, through which channels they are delivered, or what 'fast' means. Each of these changes the data model, the public API and the architecture (synchronous vs queued delivery), so they must be answered before planning.",
+  "acceptance_criteria": [
+    {"id": "AC1", "text": "Users receive a notification for each relevant event (events to be defined)."},
+    {"id": "AC2", "text": "Users can choose which notifications they receive."},
+    {"id": "AC3", "text": "Notifications are delivered within an agreed latency target (to be defined)."}
+  ],
+  "non_functional": ["Latency target: undefined ('fast')"],
+  "out_of_scope": [],
+  "ambiguities": [
+    {"id": "Q1", "question": "Which events should trigger a notification, and which system produces them?", "severity": "blocking",
+     "why_it_matters": "Defines the event schema, the ingestion API and the message templates.",
+     "assumption": "Order lifecycle events from the order system."},
+    {"id": "Q2", "question": "Which delivery channels: in-app, email, SMS, push?", "severity": "blocking",
+     "why_it_matters": "Email/SMS/push need provider integrations, retries and queued delivery; in-app does not.",
+     "assumption": "In-app inbox only, designed so channels can be added."},
+    {"id": "Q3", "question": "What does 'fast' mean: a latency target from event to the user seeing it?", "severity": "blocking",
+     "why_it_matters": "Seconds allows synchronous fan-out; sub-second at scale or slow channels needs a queue and workers.",
+     "assumption": "Visible within 5 seconds p95."},
+    {"id": "Q4", "question": "How fine-grained is control: global mute, per event type, per channel?", "severity": "minor",
+     "why_it_matters": "Shapes the preferences model.",
+     "assumption": "Per channel, per event type; everything on by default."},
+    {"id": "Q5", "question": "Can the producer send the same event twice?", "severity": "minor",
+     "why_it_matters": "Without idempotency users get duplicate notifications.",
+     "assumption": "Yes; ingestion is idempotent by event_id."}
+  ],
+  "assumptions": []
+}

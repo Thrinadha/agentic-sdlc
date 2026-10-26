@@ -1,0 +1,8 @@
+{
+  "files": [
+    {"path": "README.md", "content_file": "files/README.md"},
+    {"path": "docs/scalability.md", "content_file": "files/docs/scalability.md"}
+  ],
+  "notes": "Examples use the contract's paths and status codes.",
+  "decisions": []
+}

@@ -1,0 +1,9 @@
+{
+  "files": [
+    {"path": "tests/unit/test_shortcode.py", "content_file": "files/tests/unit/test_shortcode.py"},
+    {"path": "tests/unit/test_cache.py", "content_file": "files/tests/unit/test_cache.py"},
+    {"path": "tests/unit/test_service.py", "content_file": "files/tests/unit/test_service.py"}
+  ],
+  "notes": "Deterministic: fake clock for the cache, injected code factory to force collisions.",
+  "decisions": []
+}

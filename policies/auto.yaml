@@ -1,0 +1,15 @@
+# Gate policy for unattended runs (CI, demos, evaluation).
+#
+# approve | reject per gate. Hard rules that no policy can change:
+#   - a gate with blockers (failing checks, secret findings, bad PR hygiene) is always rejected
+#   - blocking ambiguities need answers (answers file or a human); "assume" proceeds on the
+#     documented default assumptions and records that in the summary
+gates:
+  clarify: answers_or_stop   # answers_or_stop | assume
+  plan: approve
+  commit: approve
+  pr: approve
+  review_fixes: approve
+  escalation: reject         # unattended runs never push past exhausted recovery
+  merge: approve
+  release: approve

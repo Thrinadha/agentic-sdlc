@@ -1,0 +1,22 @@
+{
+  "summary": "The paging bug is in BookmarkStore.list: the slice end is `start + size - 1`, so every page returns size-1 items and the last bookmark of each page window is never returned (45 bookmarks with size 20 show 19 + 19 + 5 = 43). The tag filter belongs in the same method, before slicing, with a new optional query parameter in api.list_bookmarks.",
+  "architecture": "bookmarks.main:create_app builds the FastAPI app and puts one BookmarkStore on app.state. bookmarks/api.py routes (prefix /bookmarks) call the store and wrap results in pydantic models from bookmarks/models.py (Page = items + total + page + size). BookmarkStore is an in-memory dict guarded by a lock; list() sorts newest first, then slices.",
+  "impacted": [
+    {"path": "bookmarks/store.py", "kind": "module", "change": "Fix slice end to start + size; add optional tag filter (casefold, exact) applied before slicing; total = filtered count.", "risk": "medium"},
+    {"path": "bookmarks/api.py", "kind": "api", "change": "Add optional `tag` query parameter (1-50 chars) to GET /bookmarks and pass it to the store.", "risk": "low"},
+    {"path": "tests/test_pagination.py", "kind": "test", "change": "New regression tests: pages add up to total, full pages have `size` items, ordering across pages, page past the end.", "risk": "low"},
+    {"path": "tests/test_tag_filter.py", "kind": "test", "change": "New tests for the tag filter, case-insensitivity, exact match, paging over filtered results.", "risk": "low"},
+    {"path": "docs/api.md", "kind": "doc", "change": "Document `tag`, the meaning of `total`, and the paging fix in a changelog entry.", "risk": "low"}
+  ],
+  "data_flows": [
+    "GET /bookmarks?page&size[&tag] -> api.list_bookmarks -> BookmarkStore.list(page, size, tag) -> sort newest first -> filter by tag -> slice -> Page"
+  ],
+  "risks": [
+    "Clients that worked around the bug (e.g. de-duplicating or expecting size-1 items) will now see one more item per page. The fix is the documented behaviour, so it is a patch-level behaviour change, called out in the PR.",
+    "BookmarkStore.list gains a parameter; it has no other callers (checked: only api.list_bookmarks)."
+  ],
+  "test_gaps": [
+    "tests/test_api.py only checks page 1 with one bookmark, so the off-by-one was never exercised.",
+    "No test covers page/size validation bounds."
+  ]
+}

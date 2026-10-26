@@ -1,0 +1,115 @@
+openapi: 3.1.0
+info:
+  title: URL Shortener
+  version: 1.0.0
+  description: Create short links, redirect them, and read click analytics.
+servers:
+  - url: http://localhost:8000
+paths:
+  /api/v1/links:
+    post:
+      tags: [links]
+      summary: Create a short link
+      operationId: create_link
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LinkCreate" }
+            examples:
+              generated: { value: { url: "https://example.com/a/long/path?q=1" } }
+              alias: { value: { url: "https://example.com/sale", custom_alias: "spring-sale", expires_at: "2027-01-01T00:00:00Z" } }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/LinkOut" } } } }
+        "409": { description: Custom alias already in use, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "422": { description: Invalid URL, alias or expiry, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /api/v1/links/{code}:
+    parameters: [{ $ref: "#/components/parameters/Code" }]
+    get:
+      tags: [links]
+      summary: Get link metadata
+      operationId: get_link
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/LinkOut" } } } }
+        "404": { description: Not found or deleted, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+    delete:
+      tags: [links]
+      summary: Delete (deactivate) a link
+      operationId: delete_link
+      responses:
+        "204": { description: Deleted }
+        "404": { description: Not found, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /api/v1/links/{code}/stats:
+    parameters: [{ $ref: "#/components/parameters/Code" }]
+    get:
+      tags: [analytics]
+      summary: Click analytics for a link (last STATS_DAYS days, default 30)
+      operationId: link_stats
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/LinkStats" } } } }
+        "404": { description: Not found, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /{code}:
+    parameters: [{ $ref: "#/components/parameters/Code" }]
+    get:
+      tags: [redirect]
+      summary: Redirect to the target URL and record a click
+      operationId: redirect
+      responses:
+        "307":
+          description: "Temporary redirect. Sent with Cache-Control: private, no-store so every click reaches the service."
+          headers:
+            Location: { schema: { type: string, format: uri } }
+        "404": { description: Unknown or deleted code, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "410": { description: Link expired, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /healthz:
+    get:
+      tags: [ops]
+      summary: Liveness probe
+      operationId: healthz
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { type: object, properties: { status: { type: string, const: ok } } } } } }
+components:
+  parameters:
+    Code:
+      name: code
+      in: path
+      required: true
+      schema: { type: string, pattern: "^[A-Za-z0-9_-]{3,32}$" }
+  schemas:
+    LinkCreate:
+      type: object
+      additionalProperties: false
+      required: [url]
+      properties:
+        url: { type: string, format: uri, maxLength: 2048, description: "http or https only" }
+        custom_alias: { type: [string, "null"], pattern: "^[A-Za-z0-9_-]{3,32}$", description: "Reserved words (api, healthz, docs, ...) are rejected" }
+        expires_at: { type: [string, "null"], format: date-time, description: "Must include a timezone and be in the future" }
+    LinkOut:
+      type: object
+      required: [code, short_url, target_url, created_at, expires_at, click_count]
+      properties:
+        code: { type: string }
+        short_url: { type: string, format: uri }
+        target_url: { type: string, format: uri }
+        created_at: { type: string, format: date-time }
+        expires_at: { type: [string, "null"], format: date-time }
+        click_count: { type: integer, minimum: 0 }
+    LinkStats:
+      type: object
+      required: [code, total_clicks, last_clicked_at, daily, top_referrers]
+      properties:
+        code: { type: string }
+        total_clicks: { type: integer }
+        last_clicked_at: { type: [string, "null"], format: date-time }
+        daily:
+          type: array
+          items: { type: object, required: [date, clicks], properties: { date: { type: string, format: date }, clicks: { type: integer } } }
+        top_referrers:
+          type: array
+          maxItems: 5
+          items: { type: object, required: [referrer, clicks], properties: { referrer: { type: string }, clicks: { type: integer } } }
+    Error:
+      type: object
+      required: [detail]
+      properties:
+        detail: {}

@@ -1,0 +1,30 @@
+{
+  "rationale": "Fix the bug first and separately (T1) so the fix is small and reviewable on its own, then build the filter on top of the corrected method (T3 depends on T1 because both change bookmarks/store.py). Tests and docs are written from the spec and the impact analysis, so they run in parallel with the code (T2, T4, T5). The validator (T6) runs the full suite, including the existing tests, to prove backward compatibility.",
+  "tasks": [
+    {"id": "T1", "title": "Fix the paging off-by-one in BookmarkStore.list", "agent": "coder", "depends_on": [],
+     "description": "Slice end must be start + size.", "acceptance": "AC1", "outputs": ["bookmarks/store.py"]},
+    {"id": "T2", "title": "Regression tests for paging", "agent": "tester", "depends_on": [],
+     "description": "45 bookmarks: pages add up, full pages have `size` items, ordering, page past the end, bounds.",
+     "acceptance": "Fails on the old code, passes on the fix.", "outputs": ["tests/test_pagination.py"]},
+    {"id": "T4", "title": "Tests for the tag filter", "agent": "tester", "depends_on": [],
+     "description": "Case-insensitive exact match, empty result, paging over filtered list, no-tag unchanged, empty tag rejected.",
+     "acceptance": "AC2-AC4", "outputs": ["tests/test_tag_filter.py"]},
+    {"id": "T5", "title": "Document the tag filter and the paging fix", "agent": "doc_writer", "depends_on": [],
+     "description": "Update docs/api.md.", "acceptance": "AC5", "outputs": ["docs/api.md"]},
+    {"id": "T3", "title": "Add the tag filter to the store and the list endpoint", "agent": "coder", "depends_on": ["T1"],
+     "description": "Optional tag param on GET /bookmarks; filter before slicing.", "acceptance": "AC2-AC4",
+     "outputs": ["bookmarks/store.py", "bookmarks/api.py"]},
+    {"id": "T6", "title": "Validate: full test suite (old + new), lint, contract, secrets", "agent": "validator",
+     "depends_on": ["T2", "T3", "T4", "T5"], "description": "", "acceptance": "All checks pass.", "outputs": []}
+  ],
+  "change_size": "minor",
+  "change_size_reason": "Adds a backward-compatible query parameter; the paging fix restores documented behaviour.",
+  "risks": [
+    "Clients that compensated for the missing item per page will now see one more item per page (correct behaviour, noted in docs changelog).",
+    "Linear tag filtering over the in-memory store; acceptable at current size, needs an index with a database."
+  ],
+  "tradeoffs": [
+    "Two coder tasks (fix, then feature) instead of one: slightly more orchestration, much easier review and revert of the bug fix alone.",
+    "Exact case-insensitive tag match instead of substring search: predictable and indexable, less fuzzy."
+  ]
+}

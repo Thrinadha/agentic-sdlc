@@ -1,0 +1,12 @@
+{
+  "files": [
+    {"path": "pyproject.toml", "content_file": "files/pyproject.toml"},
+    {"path": "notify/__init__.py", "content_file": "files/notify/__init__.py"},
+    {"path": "notify/models.py", "content_file": "files/notify/models.py"},
+    {"path": "notify/store.py", "content_file": "files/notify/store.py"},
+    {"path": "notify/channels.py", "content_file": "files/notify/channels.py"},
+    {"path": "notify/dispatcher.py", "content_file": "files/notify/dispatcher.py"}
+  ],
+  "notes": "NotificationStore is the only stateful class.",
+  "decisions": []
+}

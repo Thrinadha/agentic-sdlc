@@ -1,0 +1,12 @@
+{
+  "files": [
+    {"path": "app/schemas.py", "content_file": "files/app/schemas.py"},
+    {"path": "app/repository.py", "content_file": "files/app/repository.py"},
+    {"path": "app/service.py", "content_file": "files/app/service.py"},
+    {"path": "app/analytics.py", "content_file": "files/attempt1/app/analytics.py"},
+    {"path": "app/api.py", "content_file": "files/app/api.py"},
+    {"path": "app/main.py", "content_file": "files/app/main.py"}
+  ],
+  "notes": "Domain errors are mapped to status codes in one place (api.register_error_handlers).",
+  "decisions": ["Self-referencing links (to BASE_URL) are rejected to prevent redirect loops"]
+}

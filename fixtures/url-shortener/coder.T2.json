@@ -1,0 +1,13 @@
+{
+  "files": [
+    {"path": "pyproject.toml", "content_file": "files/pyproject.toml"},
+    {"path": "app/__init__.py", "content_file": "files/app/__init__.py"},
+    {"path": "app/config.py", "content_file": "files/app/config.py"},
+    {"path": "app/db.py", "content_file": "files/app/db.py"},
+    {"path": "app/models.py", "content_file": "files/app/models.py"},
+    {"path": "app/shortcode.py", "content_file": "files/app/shortcode.py"},
+    {"path": "app/cache.py", "content_file": "files/app/cache.py"}
+  ],
+  "notes": "SQLite returns naive datetimes; models.as_utc normalises them so expiry comparisons are always timezone-aware.",
+  "decisions": ["BIGINT ids in PostgreSQL with an INTEGER variant for SQLite autoincrement"]
+}

@@ -1,0 +1,8 @@
+{
+  "files": [
+    {"path": "notify/api.py", "content_file": "files/notify/api.py"},
+    {"path": "notify/main.py", "content_file": "files/notify/main.py"}
+  ],
+  "notes": "",
+  "decisions": []
+}

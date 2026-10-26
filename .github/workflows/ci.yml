@@ -1,0 +1,95 @@
+# Credentials come from repository SECRETS, other settings from repository VARIABLES
+# (Settings -> Secrets and variables -> Actions). Nothing secret is written in this file.
+#
+#   Secrets  (optional): ANTHROPIC_API_KEY, OPENAI_API_KEY, SDLC_ALERT_WEBHOOK
+#   Variables (optional): SDLC_PROVIDER_LIVE (anthropic|openai), SDLC_MODEL, SDLC_OPENAI_BASE_URL,
+#                         SDLC_MAX_LLM_CALLS
+#
+# Without any secrets the pipeline still runs everything offline (mock provider).
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  SDLC_ALERT_WEBHOOK: ${{ secrets.SDLC_ALERT_WEBHOOK }}   # empty when the secret is not configured
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - run: pip install -e ".[app,dev]"
+      - run: sdlc doctor
+      - run: ruff check .
+      - run: pytest tests/unit
+      - name: End-to-end scenarios and CLI (with dependency vulnerability audit)
+        run: pytest tests/integration
+        env:
+          SDLC_DEPENDENCY_AUDIT: "1"
+      - name: Security scan of the orchestrator itself
+        run: |
+          bandit -q -r src -ll -ii
+          pip-audit --progress-spinner off --skip-editable
+      - name: Offline demo (all scenarios)
+        run: sdlc demo --quiet --out ci-outputs
+      - uses: actions/upload-artifact@v4
+        if: always() && matrix.python == '3.12'
+        with:
+          name: demo-outputs
+          path: ci-outputs
+
+  live-smoke:
+    # Runs only when a maintainer starts it manually and the provider secret exists.
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SDLC_PROVIDER: ${{ vars.SDLC_PROVIDER_LIVE || 'anthropic' }}
+      SDLC_MODEL: ${{ vars.SDLC_MODEL }}
+      SDLC_OPENAI_BASE_URL: ${{ vars.SDLC_OPENAI_BASE_URL }}
+      SDLC_MAX_LLM_CALLS: ${{ vars.SDLC_MAX_LLM_CALLS || '60' }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      SDLC_DEBUG: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[app,dev,anthropic]"
+      - run: sdlc doctor
+      - name: Live run of the mandatory use case (unattended policy)
+        run: sdlc implement examples/requirements/url-shortener.md --policy auto -w live-ws
+      - name: Diagnose
+        if: always()
+        run: sdlc debug -w live-ws
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: live-run
+          path: live-ws/.sdlc

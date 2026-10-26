@@ -1,0 +1,10 @@
+{
+  "files": [
+    {"path": "tests/conftest.py", "content_file": "files/tests/conftest.py"},
+    {"path": "tests/helpers.py", "content_file": "files/tests/helpers.py"},
+    {"path": "tests/integration/test_links_api.py", "content_file": "files/tests/integration/test_links_api.py"},
+    {"path": "tests/integration/test_redirect_analytics.py", "content_file": "files/tests/integration/test_redirect_analytics.py"}
+  ],
+  "notes": "Written from api/openapi.yaml. Expiry is simulated by moving expires_at into the past in the database, so no test sleeps.",
+  "decisions": []
+}

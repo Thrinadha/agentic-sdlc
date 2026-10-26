@@ -1,0 +1,21 @@
+{
+  "verdict": "approve_with_comments",
+  "summary": "Minimal, well-scoped change: the fix is one line in BookmarkStore.list with regression tests that fail on the old code, and the filter reuses the same method instead of adding a parallel code path. Existing tests still pass, so clients without `tag` are unaffected.",
+  "coverage": [
+    {"criterion_id": "AC1", "status": "done", "evidence": "store.list slice fix; test_pages_add_up_to_total, test_full_page_has_exactly_size_items"},
+    {"criterion_id": "AC2", "status": "done", "evidence": "casefold exact match; test_filter_by_tag_ignores_case, test_tag_is_an_exact_match_not_a_substring"},
+    {"criterion_id": "AC3", "status": "done", "evidence": "filter before slice; test_paging_applies_to_filtered_list"},
+    {"criterion_id": "AC4", "status": "done", "evidence": "existing tests/test_api.py unchanged and passing; test_without_tag_lists_everything, test_out_of_range_paging_is_rejected"},
+    {"criterion_id": "AC5", "status": "done", "evidence": "docs/api.md 'Filtering by tag' and changelog"}
+  ],
+  "findings": [
+    {"severity": "low", "check": "patterns", "file": "bookmarks/store.py", "line": 39,
+     "message": "Tags are compared with casefold() on every request; storing a normalised copy on write would avoid the repeated work.",
+     "suggestion": "Follow-up when a persistent store is introduced: keep a lower-cased tag column with an index."},
+    {"severity": "low", "check": "missed scenario", "file": "bookmarks/api.py", "line": 24,
+     "message": "Whitespace-only tags (`?tag=%20`) are accepted and simply match nothing.",
+     "suggestion": "Optional: strip and reject blank tags; harmless today."}
+  ],
+  "missed_scenarios": ["Concurrent add during paging can shift items between pages (offset paging); cursor paging would fix it, out of scope."],
+  "fixes": []
+}
